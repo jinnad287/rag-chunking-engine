@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChunkIQ — Smart Retrieval System</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+<script>
+  if (window.pdfjsLib) {
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+  }
+</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0e1a;--bg2:#111827;--bg3:#1a2235;--bg4:#1e2a3d;
+  --border:#2a3a55;--border2:#3a4f70;
+  --accent:#4f8ef7;--accent2:#7c3aed;--accent3:#06d6a0;
+  --text:#e8edf8;--text2:#8899bb;--text3:#5a6a88;
+  --sem:#4f8ef7;--str:#06d6a0;--ovl:#f59e0b;
+  --radius:12px;--radius-sm:8px;
+  --font-head:'Syne',sans-serif;--font-mono:'JetBrains Mono',monospace;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font-mono);min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+header{position:sticky;top:0;z-index:50;padding:1rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:rgba(10,14,26,.95);backdrop-filter:blur(12px)}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.logo-text{font-family:var(--font-head);font-size:1rem;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.logo-text span{font-size:.65rem;font-weight:400;color:var(--text2);display:block;letter-spacing:.08em;font-family:var(--font-mono)}
+.hbadge{background:var(--bg3);border:1px solid var(--border);padding:.25rem .7rem;border-radius:20px;font-size:.65rem;color:var(--accent3);letter-spacing:.06em}
+
+.wrap{max-width:1080px;margin:0 auto;padding:1.5rem 1rem}
+
+.slabel{font-size:.6rem;letter-spacing:.14em;color:var(--text3);text-transform:uppercase;margin-bottom:.5rem;display:flex;align-items:center;gap:6px}
+.slabel::before{content:'';display:inline-block;width:12px;height:1px;background:var(--border2)}
+
+.panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.25rem}
+
+.flabel{font-size:.65rem;color:var(--text2);margin-bottom:.35rem;letter-spacing:.06em;display:flex;align-items:center;gap:5px}
+.fdot{width:5px;height:5px;border-radius:50%;background:var(--accent);display:inline-block}
+
+textarea,input[type=text],input[type=number]{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:var(--font-mono);font-size:.8rem;border-radius:var(--radius-sm);padding:.65rem .9rem;outline:none;transition:border-color .2s}
+textarea:focus,input[type=text]:focus,input[type=number]:focus{border-color:var(--accent)}
+textarea{min-height:130px;resize:vertical;line-height:1.6}
+input[type=text],input[type=number]{height:40px}
+
+.upzone{border:1px dashed var(--border2);border-radius:var(--radius-sm);padding:1rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg3);position:relative;margin-top:.5rem}
+.upzone:hover{border-color:var(--accent);background:var(--bg4)}
+.upzone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upzone p{font-size:.7rem;color:var(--text2);margin-top:.25rem}
+.upzone .fname{color:var(--accent3);font-size:.72rem;margin-top:.25rem;word-break:break-all}
+
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.65rem;margin-top:.9rem;padding-top:.9rem;border-top:1px solid var(--border)}
+.pf{display:flex;flex-direction:column;gap:.25rem}
+.pf label{font-size:.62rem;color:var(--text3);letter-spacing:.07em}
+.pf input[type=range]{width:100%;height:4px;accent-color:var(--accent);cursor:pointer}
+.pval{font-size:.68rem;color:var(--accent);text-align:right}
+
+.runbtn{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;padding:.9rem 1.5rem;border-radius:var(--radius-sm);font-family:var(--font-head);font-size:.9rem;font-weight:700;cursor:pointer;width:100%;margin-top:.9rem;transition:opacity .2s,transform .1s;display:flex;align-items:center;justify-content:center;gap:8px;letter-spacing:.02em}
+.runbtn:hover{opacity:.9}
+.runbtn:active{transform:scale(.99)}
+.runbtn:disabled{opacity:.4;cursor:not-allowed}
+.spin{width:15px;height:15px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .6s linear infinite;display:none}
+.runbtn.loading .spin{display:block}
+.runbtn.loading .btxt{display:none}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+.prog{background:var(--bg3);border-radius:3px;height:3px;overflow:hidden;margin-top:.4rem;display:none}
+.prog.show{display:block}
+.progbar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent3));background-size:200% 100%;animation:shi 1.2s infinite}
+@keyframes shi{0%{background-position:100% 0}100%{background-position:-100% 0}}
+
+.ebox{background:#1a0d0d;border:1px solid #ef4444;border-radius:var(--radius-sm);padding:.9rem;color:#fca5a5;font-size:.75rem;line-height:1.6;margin-top:.75rem;display:none}
+
+.rgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:.9rem;margin-bottom:1.25rem}
+.scard{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;animation:fup .35s ease both}
+.scard:nth-child(2){animation-delay:.07s}
+.scard:nth-child(3){animation-delay:.14s}
+.scard.winner{border-color:var(--accent3);box-shadow:inset 0 0 0 1px var(--accent3)}
+@keyframes fup{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+.chdr{padding:.9rem 1.1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.ctitle{display:flex;align-items:center;gap:8px}
+.sdot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.sname{font-family:var(--font-head);font-size:.9rem;font-weight:700}
+.cnt{font-size:.62rem;color:var(--text3);margin-top:1px}
+.wbadge{background:var(--accent3);color:#0a0e1a;font-size:.58rem;padding:.18rem .55rem;border-radius:20px;font-weight:700;letter-spacing:.07em}
+
+.cscores{padding:.9rem 1.1rem;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:.5rem}
+.srow{display:flex;align-items:center;gap:.6rem}
+.slb{font-size:.62rem;color:var(--text2);width:60px;flex-shrink:0}
+.sbw{flex:1;height:5px;background:var(--bg4);border-radius:3px;overflow:hidden}
+.sb{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.sv{font-size:.68rem;width:40px;text-align:right;flex-shrink:0}
+.avgs{display:flex;align-items:baseline;gap:6px;padding-top:.35rem}
+.abig{font-size:1.45rem;font-weight:700;font-family:var(--font-head)}
+.albl{font-size:.6rem;color:var(--text3)}
+
+.cchunks{padding:.9rem 1.1rem;display:flex;flex-direction:column;gap:.5rem;max-height:240px;overflow-y:auto}
+.ci{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.65rem;cursor:pointer;transition:border-color .2s}
+.ci:hover{border-color:var(--border2)}
+.cm{display:flex;align-items:center;justify-content:space-between;margin-bottom:.3rem}
+.cr{font-size:.58rem;color:var(--text3);letter-spacing:.06em}
+.cs{font-size:.68rem;font-weight:600}
+.cp{font-size:.7rem;color:var(--text2);line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+
+.compbar{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.25rem;animation:fup .35s ease .2s both}
+.crow{display:flex;align-items:center;gap:.9rem;padding:.5rem 0;border-bottom:1px solid var(--border)}
+.crow:last-child{border-bottom:none}
+.cname{font-size:.75rem;width:130px;flex-shrink:0;font-weight:600}
+.cbw{flex:1;height:26px;background:var(--bg4);border-radius:var(--radius-sm);overflow:hidden}
+.cb{height:100%;border-radius:var(--radius-sm);display:flex;align-items:center;padding-left:10px;font-size:.68rem;font-weight:600;color:#fff;transition:width 1s cubic-bezier(.4,0,.2,1);min-width:36px}
+.csc{font-size:.78rem;font-weight:700;width:46px;text-align:right;flex-shrink:0}
+
+.bbanner{background:var(--bg2);border:1px solid var(--accent3);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.25rem;animation:fup .35s ease .28s both}
+.bhead{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.65rem;margin-bottom:.9rem}
+.btitle{font-family:var(--font-head);font-size:1rem;font-weight:800;display:flex;align-items:center;gap:8px}
+.bmeta{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+.mpill{background:var(--bg3);border:1px solid var(--border);padding:.25rem .7rem;border-radius:20px;font-size:.65rem;display:flex;align-items:center;gap:.3rem}
+.mpill span{color:var(--text2)}
+.mpill strong{color:var(--accent)}
+.bchunks{display:flex;flex-direction:column;gap:.65rem}
+.bchunk{background:var(--bg3);border-left:3px solid var(--accent3);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:.9rem;font-size:.75rem;line-height:1.75;color:var(--text2)}
+.bcnum{font-size:.58rem;color:var(--accent3);margin-bottom:.35rem;letter-spacing:.07em}
+
+.jbox{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.1rem;animation:fup .35s ease .35s both}
+.jhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:.65rem}
+.jout{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.9rem;font-size:.68rem;line-height:1.6;overflow-x:auto;white-space:pre;max-height:280px;overflow-y:auto;color:var(--accent3)}
+
+.cpybtn{background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:.25rem .7rem;border-radius:6px;font-size:.65rem;cursor:pointer;font-family:var(--font-mono);transition:all .2s}
+.cpybtn:hover{border-color:var(--border2);color:var(--text)}
+
+.estate{text-align:center;padding:3rem 1rem;color:var(--text3)}
+.eicon{font-size:2.2rem;margin-bottom:.9rem;opacity:.35}
+.estate p{font-size:.78rem;line-height:1.7}
+
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;align-items:center;justify-content:center;padding:1rem}
+.modal-ov.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);max-width:580px;width:100%;max-height:80vh;overflow-y:auto}
+.mhdr{padding:1.1rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.mtitle{font-family:var(--font-head);font-weight:700;font-size:.95rem}
+.mclose{background:none;border:1px solid var(--border);color:var(--text2);width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center}
+.mbody{padding:1.25rem;font-size:.77rem;line-height:1.8;color:var(--text2)}
+
+.qex{color:#22c55e}.qgd{color:#4f8ef7}.qmd{color:#f59e0b}.qpw{color:#ef4444}
+
+@media(max-width:580px){
+  .rgrid{grid-template-columns:1fr}
+  .pgrid{grid-template-columns:1fr 1fr}
+  .crow{gap:.5rem}.cname{width:90px;font-size:.68rem}
+  .bhead{flex-direction:column;align-items:flex-start}
+  .abig{font-size:1.2rem}
+  header{flex-wrap:wrap;gap:.5rem}
+}
+@media(max-width:380px){
+  .pgrid{grid-template-columns:1fr}
+  .logo-text{font-size:.85rem}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">⚡</div>
+    <div class="logo-text">ChunkIQ
+      <span>Smart Chunking &amp; Retrieval</span>
+    </div>
+  </div>
+  <div class="hbadge">TF-IDF · Cosine Similarity</div>
+</header>
+
+<div class="wrap">
+
+  <div class="panel">
+    <div class="slabel">Document Input</div>
+
+    <div style="margin-bottom:.9rem">
+      <div class="flabel"><span class="fdot"></span>Document Text</div>
+      <textarea id="docText" placeholder="Paste your document here — article, report, research paper, book chapter...&#10;&#10;Try the pre-loaded demo or upload a .txt / .json / .pdf file below."></textarea>
+      <div class="upzone">
+        <input type="file" id="fileInput" accept=".txt,.json,.pdf">
+        <div style="font-size:1.3rem">📂</div>
+        <p>Upload .txt, .json, or .pdf — click or drag</p>
+        <div class="fname" id="fName"></div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:.5rem">
+      <div class="flabel"><span class="fdot" style="background:var(--accent2)"></span>Query</div>
+      <input type="text" id="qText" placeholder="What do you want to find? e.g. What are the ethical concerns in AI?">
+    </div>
+
+    <div class="pgrid">
+      <div class="pf">
+        <label>Top-K Chunks</label>
+        <input type="number" id="topK" value="5" min="1" max="20">
+      </div>
+      <div class="pf">
+        <label>Semantic Threshold</label>
+        <input type="range" id="semT" min="0.05" max="0.50" step="0.05" value="0.15"
+               oninput="document.getElementById('semTV').textContent=parseFloat(this.value).toFixed(2)">
+        <div class="pval" id="semTV">0.15</div>
+      </div>
+      <div class="pf">
+        <label>Overlap Window</label>
+        <input type="number" id="ovWin" value="6" min="2" max="20">
+      </div>
+      <div class="pf">
+        <label>Overlap Size</label>
+        <input type="number" id="ovSz" value="2" min="1" max="10">
+      </div>
+    </div>
+
+    <button class="runbtn" id="runBtn" onclick="runAnalysis()">
+      <div class="spin"></div>
+      <span class="btxt">⚡ Run Analysis</span>
+    </button>
+    <div class="prog" id="prog"><div class="progbar"></div></div>
+    <div class="ebox" id="ebox"></div>
+  </div>
+
+  <div id="results">
+    <div class="estate">
+      <div class="eicon">🔍</div>
+      <p>Paste a document and enter a query,<br>then click <strong style="color:var(--text)">Run Analysis</strong> to compare<br>all three chunking strategies.</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="modal-ov" id="cModal" onclick="if(event.target===this)cM()">
+  <div class="modal">
+    <div class="mhdr">
+      <div class="mtitle" id="mTitle">Chunk Detail</div>
+      <button class="mclose" onclick="cM()">✕</button>
+    </div>
+    <div class="mbody" id="mBody"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  CHUNKING ENGINE — JS port of chunking_system.py
+// ═══════════════════════════════════════════════════════════
+const SW=new Set(['the','a','an','and','or','but','in','on','at','to','for','of','with','by','from','is','are','was','were','be','been','being','have','has','had','do','does','did','will','would','could','should','may','might','shall','can','this','that','these','those','it','its','as','if','so','not','no','than','then','when','where','which','who','whom','what','how','all','each','both','any','some','such','into','through','during','about','also']);
+
+function tok(t){return(t.toLowerCase().match(/\b[a-z]{2,}\b/g)||[]).filter(w=>!SW.has(w))}
+function tfv(tokens){const c={};tokens.forEach(t=>c[t]=(c[t]||0)+1);const n=Math.max(tokens.length,1);const r={};for(const t in c)r[t]=c[t]/n;return r}
+function idf(corpus){const n=corpus.length,df={};corpus.forEach(ts=>{new Set(ts).forEach(t=>df[t]=(df[t]||0)+1)});const r={};for(const t in df)r[t]=Math.log((n+1)/(df[t]+1))+1;return r}
+function tfidf(tokens,idfMap){const tf=tfv(tokens);const r={};for(const t in tf)r[t]=tf[t]*(idfMap[t]||1);return r}
+function cos(a,b){const ka=Object.keys(a),kb=new Set(Object.keys(b));if(!ka.length||!kb.size)return 0;const dot=ka.filter(k=>kb.has(k)).reduce((s,k)=>s+a[k]*b[k],0);const na=Math.sqrt(ka.reduce((s,k)=>s+a[k]**2,0));const nb=Math.sqrt(Object.values(b).reduce((s,v)=>s+v**2,0));return(!na||!nb)?0:dot/(na*nb)}
+
+function scoreChunks(chunks,query,k){
+  const ct=chunks.map(c=>tok(c.text));
+  const qt=tok(query);
+  const id=idf([...ct,[...qt]]);
+  const qv=tfidf(qt,id);
+  const sc=chunks.map((c,i)=>({s:cos(qv,tfidf(ct[i],id)),c}));
+  sc.sort((a,b)=>b.s-a.s);
+  const top=sc.slice(0,k);
+  const scores=top.map(x=>+x.s.toFixed(4));
+  return{top_chunks:top.map(x=>x.c.text),similarity_scores:scores,avg_score:+(scores.reduce((a,v)=>a+v,0)/Math.max(scores.length,1)).toFixed(4)};
+}
+
+function prep(t){return t.replace(/\r\n|\r/g,'\n').replace(/\n{3,}/g,'\n\n').replace(/[ \t]+/g,' ').trim()}
+function splitSents(t){return t.split(/(?<=[.!?])\s+/).map(s=>s.trim()).filter(s=>s.length>10)}
+
+// Strategy 1: Semantic
+function sv(s){const t=tok(s);const c={};t.forEach(w=>c[w]=(c[w]||0)+1);const n=Math.max(t.length,1);const r={};for(const w in c)r[w]=c[w]/n;return r}
+function semChunk(text,thr=0.15,mx=8){
+  const ss=splitSents(text);
+  if(!ss.length)return[{text,index:0,strategy:'semantic'}];
+  const out=[];let cur=[ss[0]],cv=sv(ss[0]);
+  for(let i=1;i<ss.length;i++){
+    const s=ss[i],gv=sv(s),sim=cos(cv,gv);
+    if(sim<thr||cur.length>=mx){const t=cur.join(' ').trim();if(t)out.push({text:t,index:out.length,strategy:'semantic'});cur=[s];cv=gv;}
+    else{cur.push(s);tok(s).forEach(w=>{cv[w]=(cv[w]||0)*.7+(1/Math.max(tok(s).length,1))*.3});}
+  }
+  if(cur.length){const t=cur.join(' ').trim();if(t)out.push({text:t,index:out.length,strategy:'semantic'})}
+  return out.length?out:[{text,index:0,strategy:'semantic'}];
+}
+
+// Strategy 2: Structure-Aware
+const HR=/^(#{1,6}\s+.+|[A-Z][A-Z\s]{3,}:|(?:\d+[\.\)]\s+[A-Z].{3,})|(?:Chapter|Section|Part)\s+\w+)/m;
+function strChunk(text,minL=100){
+  const lines=text.split('\n');const out=[];let cl=[],ch='';
+  function flush(h,bl){const b=bl.join('\n').trim();if(b){const f=(h?h+'\n'+b:b).trim();out.push({text:f,index:out.length,strategy:'structure_aware',heading:h})}}
+  for(const l of lines){if(HR.test(l.trim())){flush(ch,cl);ch=l.trim();cl=[];}else cl.push(l);}
+  flush(ch,cl);
+  const mg=[];
+  for(const c of out){if(mg.length&&c.text.length<minL)mg[mg.length-1]={...mg[mg.length-1],text:mg[mg.length-1].text+'\n'+c.text};else mg.push(c)}
+  if(!mg.length){return text.split(/\n{2,}/).filter(p=>p.trim().length>=minL).map((p,i)=>({text:p.trim(),index:i,strategy:'structure_aware'}))}
+  return mg.length?mg:[{text,index:0,strategy:'structure_aware'}];
+}
+
+// Strategy 3: Overlap
+function ovChunk(text,win=6,ov=2){
+  const ss=splitSents(text);if(!ss.length)return[{text,index:0,strategy:'overlap'}];
+  const step=Math.max(1,win-ov);const out=[];
+  for(let i=0;i<ss.length;i+=step){const ws=ss.slice(i,i+win);const t=ws.join(' ').trim();if(t)out.push({text:t,index:out.length,strategy:'overlap'})}
+  return out.length?out:[{text,index:0,strategy:'overlap'}];
+}
+
+function analyse(doc,query,k,sThr,oWin,oSz){
+  const text=prep(doc);
+  if(!text)throw new Error('Document is empty.');
+  if(!query.trim())throw new Error('Please enter a query.');
+  const sc=semChunk(text,sThr),stc=strChunk(text),oc=ovChunk(text,oWin,oSz);
+  const sr=scoreChunks(sc,query,k),str=scoreChunks(stc,query,k),or=scoreChunks(oc,query,k);
+  const res={semantic:{...sr,num_chunks:sc.length},structure_aware:{...str,num_chunks:stc.length},overlap:{...or,num_chunks:oc.length}};
+  const best=Object.entries({semantic:sr.avg_score,structure_aware:str.avg_score,overlap:or.avg_score}).sort((a,b)=>b[1]-a[1])[0][0];
+  return{results:res,best_strategy:best,best_chunks:res[best].top_chunks,final_score:res[best].avg_score};
+}
+
+// ═══════════════════════════════════════════════════════════
+//  UI
+// ═══════════════════════════════════════════════════════════
+const COLS={semantic:'var(--sem)',structure_aware:'var(--str)',overlap:'var(--ovl)'};
+const LABS={semantic:'Semantic',structure_aware:'Structure-Aware',overlap:'Overlap'};
+const DESC={
+  semantic:'Groups sentences by topic coherence using cosine similarity drop detection. New chunk begins when similarity falls below the threshold.',
+  structure_aware:'Splits on document structure: Markdown headings (# ##), numbered sections, ALL-CAPS titles. Falls back to paragraphs.',
+  overlap:'Sliding sentence window with configurable overlap, ensuring context at boundaries is never lost.'
+};
+
+function qc(s){return s>=.6?'qex':s>=.3?'qgd':s>=.1?'qmd':'qpw'}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+document.getElementById('fileInput').addEventListener('change', async function(){
+  const f=this.files[0];if(!f)return;
+  document.getElementById('fName').textContent=f.name;
+  
+  if(f.name.toLowerCase().endsWith('.pdf')){
+    document.getElementById('docText').value = "Extracting text from PDF, please wait...";
+    try {
+      const arrayBuffer = await f.arrayBuffer();
+      const pdf = await window.pdfjsLib.getDocument(arrayBuffer).promise;
+      let fullText = '';
+      for(let i = 1; i <= pdf.numPages; i++){
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        fullText += content.items.map(item => item.str).join(' ') + '\n\n';
+      }
+      document.getElementById('docText').value = fullText;
+    } catch (err) {
+      document.getElementById('docText').value = "Error reading PDF: " + err.message;
+    }
+  } else {
+    const r=new FileReader();
+    r.onload=e=>{
+      let c=e.target.result;
+      if(f.name.toLowerCase().endsWith('.json')){
+        try{const p=JSON.parse(c);
+          if(Array.isArray(p))c=p.map(i=>typeof i==='string'?i:(i.content||i.text||i.body||JSON.stringify(i))).join('\n\n');
+          else if(typeof p==='object')c=Object.values(p).filter(v=>typeof v==='string').join('\n\n')||JSON.stringify(p,null,2);
+        }catch(err){}
+      }
+      document.getElementById('docText').value=c;
+    };
+    r.readAsText(f);
+  }
+});
+
+function runAnalysis(){
+  const doc=document.getElementById('docText').value.trim();
+  const q=document.getElementById('qText').value.trim();
+  const k=parseInt(document.getElementById('topK').value)||5;
+  const st=parseFloat(document.getElementById('semT').value)||0.15;
+  const ow=parseInt(document.getElementById('ovWin').value)||6;
+  const os=parseInt(document.getElementById('ovSz').value)||2;
+  const eb=document.getElementById('ebox');
+  eb.style.display='none';
+  if(!doc){eb.textContent='Please paste a document or upload a file.';eb.style.display='block';return}
+  if(!q){eb.textContent='Please enter a query.';eb.style.display='block';return}
+  const btn=document.getElementById('runBtn');
+  btn.disabled=true;btn.classList.add('loading');
+  document.getElementById('prog').classList.add('show');
+  document.getElementById('results').innerHTML='';
+  setTimeout(()=>{
+    try{const res=analyse(doc,q,k,st,ow,os);render(res);}
+    catch(err){eb.textContent='Error: '+err.message;eb.style.display='block';}
+    btn.disabled=false;btn.classList.remove('loading');
+    document.getElementById('prog').classList.remove('show');
+  },60);
+}
+
+function render(result){
+  const{results,best_strategy:bs,best_chunks:bc,final_score:fs}=result;
+  const mx=Math.max(...Object.values(results).map(r=>r.avg_score))||1;
+  const mt=Math.max(...Object.values(results).map(r=>r.similarity_scores[0]||0))||1;
+  let h='';
+
+  // Strategy cards
+  h+=`<div class="slabel" style="margin-bottom:.65rem">Strategy Comparison</div><div class="rgrid">`;
+  for(const[k,d] of Object.entries(results)){
+    const w=k===bs;
+    h+=`<div class="scard${w?' winner':''}">
+      <div class="chdr">
+        <div class="ctitle">
+          <div class="sdot" style="background:${COLS[k]}"></div>
+          <div><div class="sname">${LABS[k]}</div><div class="cnt">${d.num_chunks} chunks</div></div>
+        </div>
+        ${w?'<div class="wbadge">BEST</div>':''}
+      </div>
+      <div class="cscores">
+        <div class="avgs">
+          <div class="abig ${qc(d.avg_score)}" style="color:${COLS[k]}">${d.avg_score.toFixed(4)}</div>
+          <div class="albl">avg cosine score</div>
+        </div>
+        ${d.similarity_scores.map((s,i)=>`<div class="srow"><div class="slb">Chunk #${i+1}</div><div class="sbw"><div class="sb" style="width:${(s/mt*100).toFixed(1)}%;background:${COLS[k]}"></div></div><div class="sv ${qc(s)}">${s.toFixed(4)}</div></div>`).join('')}
+      </div>
+      <div class="cchunks">
+        ${d.top_chunks.map((t,i)=>`<div class="ci" onclick="showC(${JSON.stringify(t).replace(/'/g,"&#39;")},${d.similarity_scores[i]||0},'${k}',${i+1})"><div class="cm"><div class="cr">CHUNK ${i+1}</div><div class="cs ${qc(d.similarity_scores[i]||0)}">${(d.similarity_scores[i]||0).toFixed(4)}</div></div><div class="cp">${esc(t)}</div></div>`).join('')}
+      </div>
+    </div>`;
+  }
+  h+='</div>';
+
+  // Comparison bar
+  h+=`<div class="slabel" style="margin-top:1.25rem;margin-bottom:.6rem">Score Comparison</div><div class="compbar">`;
+  for(const[k,d] of Object.entries(results)){
+    const p=mx>0?(d.avg_score/mx*100):0;
+    h+=`<div class="crow"><div class="cname" style="color:${COLS[k]}">${LABS[k]}</div><div class="cbw"><div class="cb" style="width:${p.toFixed(1)}%;background:${COLS[k]}">${d.avg_score.toFixed(4)}</div></div><div class="csc ${qc(d.avg_score)}">${d.avg_score.toFixed(4)}</div></div>`;
+  }
+  h+='</div>';
+
+  // Best chunks
+  h+=`<div class="slabel" style="margin-top:1.25rem;margin-bottom:.6rem">Best Retrieved Chunks</div>
+  <div class="bbanner">
+    <div class="bhead">
+      <div class="btitle">🏆 ${LABS[bs]} <span style="font-size:.72rem;font-weight:400;color:var(--text2)">won for this query</span></div>
+      <div class="bmeta">
+        <div class="mpill"><span>Strategy&nbsp;</span><strong>${LABS[bs]}</strong></div>
+        <div class="mpill"><span>Score&nbsp;</span><strong class="${qc(fs)}">${fs.toFixed(4)}</strong></div>
+        <div class="mpill"><span>Chunks&nbsp;</span><strong>${bc.length}</strong></div>
+      </div>
+    </div>
+    <div class="bchunks">
+      ${bc.map((t,i)=>`<div class="bchunk"><div class="bcnum">RESULT ${i+1}</div>${esc(t)}</div>`).join('')}
+    </div>
+  </div>`;
+
+  // JSON output
+  const jdata={results:{semantic:{top_chunks:results.semantic.top_chunks,similarity_scores:results.semantic.similarity_scores,avg_score:results.semantic.avg_score},structure_aware:{top_chunks:results.structure_aware.top_chunks,similarity_scores:results.structure_aware.similarity_scores,avg_score:results.structure_aware.avg_score},overlap:{top_chunks:results.overlap.top_chunks,similarity_scores:results.overlap.similarity_scores,avg_score:results.overlap.avg_score}},best_strategy:bs,best_chunks:bc,final_score:fs};
+  h+=`<div class="slabel" style="margin-top:1.25rem;margin-bottom:.6rem">JSON Output</div>
+  <div class="jbox">
+    <div class="jhead">
+      <span style="font-size:.68rem;color:var(--text2)">Full result dictionary — as returned by analyse()</span>
+      <div style="display:flex;gap:8px;">
+        <button class="cpybtn" onclick="dlJ()">Download JSON</button>
+        <button class="cpybtn" id="cpyBtn" onclick="cpyJ()">Copy</button>
+      </div>
+    </div>
+    <div class="jout" id="jout">${esc(JSON.stringify(jdata,null,2))}</div>
+  </div>`;
+
+  document.getElementById('results').innerHTML=h;
+  requestAnimationFrame(()=>{
+    document.querySelectorAll('.sb,.cb').forEach(b=>{const w=b.style.width;b.style.width='0';requestAnimationFrame(()=>{b.style.width=w;});});
+  });
+}
+
+function showC(text,score,strat,rank){
+  document.getElementById('mTitle').textContent=`${LABS[strat]} — Chunk #${rank}`;
+  document.getElementById('mBody').innerHTML=`
+    <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:.9rem">
+      <div style="background:var(--bg3);border:1px solid var(--border);padding:.25rem .7rem;border-radius:20px;font-size:.65rem">Score: <strong class="${qc(score)}">${score.toFixed(4)}</strong></div>
+      <div style="background:var(--bg3);border:1px solid var(--border);padding:.25rem .7rem;border-radius:20px;font-size:.65rem">Words: <strong>${text.split(/\s+/).length}</strong></div>
+      <div style="background:var(--bg3);border:1px solid var(--border);padding:.25rem .7rem;border-radius:20px;font-size:.65rem">Strategy: <strong style="color:${COLS[strat]}">${LABS[strat]}</strong></div>
+    </div>
+    <div style="font-size:.65rem;color:var(--text3);margin-bottom:.4rem">Strategy description</div>
+    <div style="background:var(--bg3);border-left:3px solid ${COLS[strat]};padding:.65rem .9rem;border-radius:0 6px 6px 0;font-size:.72rem;color:var(--text2);margin-bottom:.9rem">${DESC[strat]}</div>
+    <div style="font-size:.65rem;color:var(--text3);margin-bottom:.4rem">Full chunk text</div>
+    <div style="background:var(--bg3);padding:.9rem;border-radius:8px;font-size:.75rem;line-height:1.8;color:var(--text2);border:1px solid var(--border)">${esc(text)}</div>`;
+  document.getElementById('cModal').classList.add('open');
+}
+function cM(){document.getElementById('cModal').classList.remove('open')}
+function cpyJ(){
+  navigator.clipboard.writeText(document.getElementById('jout').textContent).then(()=>{
+    const b=document.getElementById('cpyBtn');b.textContent='Copied!';b.style.color='var(--accent3)';
+    setTimeout(()=>{b.textContent='Copy';b.style.color='';},2000);
+  });
+}
+function dlJ(){
+  const text = document.getElementById('jout').textContent;
+  const blob = new Blob([text], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'chunking_results.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// Pre-load demo
+window.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('docText').value=`# Introduction to Machine Learning\n\nMachine learning is a branch of artificial intelligence that enables systems to learn from data and improve without being explicitly programmed. It has become one of the most transformative technologies of the 21st century, powering everything from search engines to autonomous vehicles.\n\n## Supervised Learning\n\nSupervised learning is the most widely used machine learning paradigm. The model is trained on labelled examples so it can predict outputs for unseen inputs. Common algorithms include linear regression, decision trees, support vector machines, and neural networks. Classification predicts discrete labels while regression predicts continuous values.\n\n## Unsupervised Learning\n\nUnsupervised learning deals with unlabelled data. The algorithm tries to find hidden structure or patterns without guidance. Clustering algorithms such as K-Means group similar data points. Dimensionality reduction techniques like PCA compress high-dimensional data. Generative models including VAEs and GANs learn the underlying distribution of training data.\n\n## Deep Learning\n\nDeep learning uses neural networks with many layers to learn hierarchical feature representations automatically from raw data. Convolutional Neural Networks excel at image recognition tasks. Recurrent Networks and Transformers handle sequential data and natural language. Models like BERT, GPT, and T5 have set state-of-the-art benchmarks across NLP.\n\n## Challenges and Ethics\n\nAlgorithmic bias is one of the most pressing challenges in machine learning. Models trained on biased data reproduce and amplify those biases. Facial recognition systems show significantly higher error rates for minority groups. Interpretability is a major concern — deep models are opaque black boxes. Differential privacy and federated learning address data privacy concerns. The environmental cost of training large models is substantial, emitting significant carbon dioxide.\n\n## Future Directions\n\nSelf-supervised learning allows models to learn from vast amounts of unlabelled data. Few-shot learning generalises from minimal labelled examples. Foundation models trained on internet-scale data adapt to many downstream tasks with minimal fine-tuning. AI safety and alignment research aims to ensure that increasingly capable systems remain beneficial, safe, and aligned with human values.`;
+  document.getElementById('qText').value='What are the main challenges and ethical concerns in machine learning?';
+});
+
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeElement===document.getElementById('qText'))runAnalysis();});
+</script>
+</body>
+</html>
